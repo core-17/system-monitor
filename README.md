@@ -16,6 +16,8 @@ Dynamic list of active application volumes
 
 Ability to switch playback device for individual applications
 
+![image](https://github.com/user-attachments/assets/e00e8d76-ccb3-4272-b542-344b10866440)
+
 📦 Requirements
 
 Python 3.8+
