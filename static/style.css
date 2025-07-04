@@ -1,100 +1,304 @@
-html {
-    height: 100%;
-    overflow: hidden; /* Забороняємо прокрутку на рівні документа */
-}
-
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
     background-color: #121212;
     color: #e0e0e0;
-    margin: 0;
-    height: 100%;
-    display: flex; /* Використовуємо flexbox для body */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    box-sizing: border-box;
+    overflow: hidden; /* Body doesn't scroll, inner panels do */
+}
+
+.metrics-container {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    max-width: 1200px;
+    height: 100vh; /* Make sure container fills viewport height */
+    box-sizing: border-box;
     padding: 15px;
+    gap: 15px;
+}
+
+.metrics {
+    flex: 1; /* Left column takes equal width */
+    display: flex;
+    flex-direction: column; /* Main content of left panel (header + scrollable charts) */
+    background-color: #1e1e1e; /* Background for the entire left panel */
+    border-radius: 10px;
+    border: 1px solid #2a2a2a;
+    padding: 15px; /* Padding inside the left panel */
+    box-sizing: border-box;
+    overflow: hidden; /* Hide scrollbar for .metrics itself, its child .scrollable-charts will scroll */
+}
+
+.metrics h2 { /* Style for the main "Панель Моніторингу" header */
+    font-size: 18px;
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #f0f0f0;
+    text-align: center;
+}
+
+.scrollable-charts { /* THIS IS THE NEW SCROLLING CONTAINER */
+    flex-grow: 1; /* Allows this container to take all available vertical space */
+    display: flex;
+    flex-direction: column; /* Charts stack vertically inside */
+    gap: 10px;
+    overflow-y: auto; /* Enable independent vertical scrolling for the charts */
+    padding-right: 5px; /* Add some padding to the right to prevent scrollbar from touching content */
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera for the chart container */
+.scrollable-charts::-webkit-scrollbar {
+    display: none;
+}
+
+
+.side-panel {
+    flex: 1; /* Right column takes equal width */
+    display: flex;
+    flex-direction: column;
+    background-color: #1e1e1e;
+    border-radius: 10px;
+    padding: 15px;
+    border: 1px solid #2a2a2a;
+    box-sizing: border-box;
+    overflow-y: auto; /* Enable independent vertical scrolling for the right panel */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera for the side panel */
+.side-panel::-webkit-scrollbar {
+    display: none;
+}
+
+
+.metrics-panel {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    width: 100%;
     box-sizing: border-box;
 }
 
-.main-container {
-    max-width: 1600px;
-    width: 100%;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column; /* Вертикальне розташування елементів */
-    height: 100%;
-}
-
-h1, h2 {
-    text-align: center;
-    color: #ffffff;
-    font-weight: 400;
-    margin-top: 5px;
-    margin-bottom: 10px;
-}
-
-h1 {
-    flex-shrink: 0; /* Заголовок не має стискатися */
-    margin-bottom: 15px;
-}
-
-/* Сітка для графіків тепер буде гнучкою */
-.grid-container {
-    flex-grow: 1; /* Дозволяємо сітці зайняти весь доступний простір */
-    display: grid;
-    grid-template-columns: 1fr 1fr; /* Дві колонки */
-    grid-template-rows: 1fr 1fr;    /* Два рядки однакової висоти */
-    gap: 15px;
-    min-height: 0; /* Важливо для роботи flex-grow в деяких браузерах */
-}
-
 .chart-box {
-    background-color: #1e1e1e;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    background-color: #121212; /* Darker background for chart boxes */
+    border-radius: 8px; /* Slightly smaller radius for nested boxes */
+    padding: 8px;
     border: 1px solid #2a2a2a;
-    padding: 15px;
     display: flex;
     flex-direction: column;
-    min-width: 0;
-    min-height: 0;
-    /* Видаляємо фіксовану висоту - вона буде розрахована автоматично */
+    flex: 1;
+    height: 160px;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.chart-box h2 {
+    font-size: 13px;
+    margin: 0 0 6px 0;
+}
+
+.chart-box canvas {
+    flex-grow: 1;
 }
 
 .ram-display {
-    flex-shrink: 0; /* Блок RAM не має стискатися */
-    height: auto;
-    min-height: auto;
-    margin-top: 15px;
-    background-color: #1e1e1e;
+    background-color: #121212; /* Darker background for RAM box */
     border-radius: 8px;
-    padding: 5px 15px;
+    padding: 10px;
+    border: 1px solid #2a2a2a;
+    font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
-.ram-display h2 {
-    margin: 10px;
+/* --- AUDIO PANEL STYLES --- */
+.audio-control-section {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 10px;
 }
 
-/* Кольорові акценти для числових значень */
+.master-volume, .app-volume-item {
+    background-color: #282828; /* Slightly lighter background for audio controls */
+    border-radius: 8px;
+    padding: 10px 15px;
+    border: 1px solid #3a3a3a;
+}
+
+.master-volume h3, .application-volumes h3 {
+    font-size: 16px;
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #f0f0f0;
+}
+
+.device-select {
+    width: 100%;
+    padding: 8px;
+    border-radius: 5px;
+    background-color: #3a3a3a;
+    color: #e0e0e0;
+    border: 1px solid #555;
+    margin-bottom: 10px;
+    font-size: 14px;
+    appearance: none; /* Remove default arrow */
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23e0e0e0'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 20px;
+}
+
+.device-select:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+
+.volume-slider-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.slider {
+    flex-grow: 1;
+    -webkit-appearance: none;
+    width: 100%;
+    height: 8px;
+    background: #555;
+    outline: none;
+    opacity: 0.7;
+    transition: opacity .2s;
+    border-radius: 4px;
+}
+
+.slider:hover {
+    opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #007bff; /* Bright blue thumb */
+    cursor: grab;
+    transition: background 0.1s ease;
+}
+
+.slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #007bff;
+    cursor: grab;
+    transition: background 0.1s ease;
+}
+
+.slider.muted-slider::-webkit-slider-thumb,
+.slider.muted-slider::-moz-range-thumb {
+    background: #ff4d4d; /* Red thumb when muted */
+}
+
+.slider:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.slider:disabled::-webkit-slider-thumb,
+.slider:disabled::-moz-range-thumb {
+    cursor: not-allowed;
+    background: #888;
+}
+
+
+.mute-button {
+    background-color: #3a3a3a;
+    color: #f0f0f0;
+    border: 1px solid #555;
+    border-radius: 5px;
+    padding: 5px 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.mute-button:hover {
+    background-color: #555;
+}
+
+.mute-button[data-muted="true"] {
+    background-color: #d32f2f; /* Darker red when muted */
+    border-color: #ef9a9a;
+}
+.mute-button[data-muted="true"]:hover {
+    background-color: #c62828;
+}
+.mute-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+
+.app-volume-item {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.app-volume-item span {
+    font-size: 14px;
+    color: #c0c0c0;
+}
+
+/* Кольори значень */
 #currentCpuTemp { color: #ff6384; }
 #currentCpuLoad { color: #36a2eb; }
 #currentGpuTemp { color: #ffce56; }
 #currentGpuLoad { color: #4bc0c0; }
 #ramUsage { color: #9966ff; }
+#currentCpuFreq { color: #DAF7A6; }
+#masterVolumeValue { color: #007bff; }
 
-.current-value,
-#ramUsage {
-    font-weight: bold;
+
+@media (max-width: 992px) {
+    .metrics-container {
+        flex-direction: column;
+        height: auto;
+    }
+    .metrics, .side-panel {
+        max-height: none;
+        overflow-y: visible;
+        -ms-overflow-style: auto;
+        scrollbar-width: auto;
+    }
+    .metrics::-webkit-scrollbar,
+    .side-panel::-webkit-scrollbar {
+        display: block;
+    }
+    .scrollable-charts {
+        overflow-y: visible;
+        padding-right: 0;
+    }
+    .scrollable-charts::-webkit-scrollbar {
+        display: block;
+    }
 }
 
-/* Медіа-запит для маленьких екранів (вертикальне розташування) */
-@media (max-width: 850px) {
-    html {
-        overflow: auto; /* Дозволяємо скрол на мобільних пристроях */
-    }
-    .grid-container {
-        grid-template-columns: 1fr; /* Один графік на рядок */
-        grid-template-rows: 1fr 1fr 1fr 1fr; /* 4 рядки */
-    }
-    .chart-box {
-        min-height: 250px; /* Мінімальна висота для читабельності */
+@media (max-width: 768px) {
+    .metrics-panel {
+        flex-direction: column;
     }
 }

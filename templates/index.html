@@ -8,31 +8,65 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="main-container">
-        <div class="grid-container">
-            <div class="chart-box">
-                <h2>Температура CPU (°C): <span class="current-value" id="currentCpuTemp">--</span></h2>
-                <canvas id="cpuTempChart"></canvas>
-            </div>
-            <div class="chart-box">
-                <h2>Навантаження CPU (%): <span class="current-value" id="currentCpuLoad">--</span></h2>
-                <canvas id="cpuLoadChart"></canvas>
-            </div>
-            <div class="chart-box">
-                <h2>Температура GPU (°C): <span class="current-value" id="currentGpuTemp">--</span></h2>
-                <canvas id="gpuTempChart"></canvas>
-            </div>
-            <div class="chart-box">
-                <h2>Навантаження GPU (%): <span class="current-value" id="currentGpuLoad">--</span></h2>
-                <canvas id="gpuLoadChart"></canvas>
-            </div>
-        </div>
+    <div class="metrics-container">
+        <div class="metrics">
+            <h2>Панель Моніторингу</h2>
+            
+            <div class="scrollable-charts">
+                <div class="metrics-panel">
+                    <div class="chart-box">
+                        <h2>Температура CPU: <span id="currentCpuTemp">--</span>°C</h2>
+                        <canvas id="cpuTempChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h2>Навантаження CPU: <span id="currentCpuLoad">--</span>%</h2>
+                        <canvas id="cpuLoadChart"></canvas>
+                    </div>
+                </div>
+                <div class="metrics-panel">
+                    <div class="chart-box">
+                        <h2>Температура GPU: <span id="currentGpuTemp">--</span>°C</h2>
+                        <canvas id="gpuTempChart"></canvas>
+                    </div>
+                    <div class="chart-box">
+                        <h2>Навантаження GPU: <span id="currentGpuLoad">--</span>%</h2>
+                        <canvas id="gpuLoadChart"></canvas>
+                    </div>
+                </div>
+                <div class="ram-display">
+                    <h2>Використання RAM: <span id="ramUsage">--</span>%</h2>
+                </div>
+                <div class="chart-box">
+                    <h2>Частота CPU: <span id="currentCpuFreq">--</span> МГц</h2>
+                    <canvas id="cpuFreqChart"></canvas>
+                </div>
+                
 
-        <div class="ram-display">
-            <h2>Використання RAM: <span id="ramUsage">--</span>%</h2>
-        </div>
+            </div> </div>
+
+        <div class="side-panel">
+            <h2>Звукова Панель</h2>
+            <div class="audio-control-section">
+                <div class="master-volume">
+                    <h3>Пристрій виводу:</h3>
+                    <select id="audioDeviceSelect" class="device-select">
+                        <option value="">Завантаження...</option>
+                    </select>
+
+                    <h3>Загальна гучність: <span id="masterVolumeValue">--</span>%</h3>
+                    <div class="volume-slider-container">
+                        <input type="range" min="0" max="100" value="0" class="slider" id="masterVolumeSlider">
+                        <button id="masterMuteButton" class="mute-button" data-muted="false">🔊</button>
+                    </div>
+                </div>
+                <div class="application-volumes" id="applicationVolumes">
+                    <h3>Гучність програм:</h3>
+                    <p id="noAppsMessage">Програми з аудіо не знайдено.</p>
+                </div>
+            </div>
+            </div>
     </div>
-
+    
     <script>
         // --- ДОДАНО: ГЛОБАЛЬНІ НАЛАШТУВАННЯ CHART.JS ДЛЯ ТЕМНОЇ ТЕМИ ---
         Chart.defaults.color = '#e0e0e0'; // Колір тексту на осях
@@ -40,79 +74,295 @@
         // --------------------------------------------------------------------
 
         // Функція для створення та налаштування графіка
-        function createChart(canvasId, label, color) {
-            const ctx = document.getElementById(canvasId).getContext('2d');
-            return new Chart(ctx, {
+        function createChart(canvasId, label, color, suggestedMax = undefined) {
+            const ctx = document.getElementById(canvasId);
+            if (!ctx) {
+                console.warn(`Canvas with ID '${canvasId}' not found.`);
+                return null;
+            }
+            return new Chart(ctx.getContext('2d'), {
                 type: 'line',
                 data: {
-                    labels: [], // Мітки часу
+                    labels: [],
                     datasets: [{
                         label: label,
-                        data: [], // Дані показника
+                        data: [],
                         borderColor: color,
-                        backgroundColor: `${color}33`, // напівпрозорий фон
+                        backgroundColor: `${color}33`,
                         borderWidth: 2,
-                        pointRadius: 0, // Прибираємо точки для кращої продуктивності
+                        pointRadius: 0,
                         fill: true,
-                        tension: 0.4 // Згладжування лінії
+                        tension: 0.4
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    animation: false,
                     scales: {
                         y: {
                             beginAtZero: true,
-                            suggestedMax: (label.toLowerCase().includes('load') || label.toLowerCase().includes('ram')) ? 100 : undefined,
+                            suggestedMax: suggestedMax,
                             ticks: {
-                                color: '#aaa' // Трохи світліший колір для чисел на осі Y
+                                color: '#aaa',
+                                font: { size: 10 }
+                            },
+                            grid: {
+                                color: '#444'
                             }
                         },
                         x: {
-                             ticks: {
-                                color: '#aaa' // Трохи світліший колір для міток часу
-                            }
+                            display: false
                         }
                     },
-                    animation: false, // Вимикаємо анімацію для швидких оновлень
                     plugins: {
                         legend: {
-                            display: false // Ховаємо легенду, оскільки назва є в заголовку
+                            display: false
+                        },
+                        tooltip: {
+                            bodyFont: { size: 12 },
+                            titleFont: { size: 12 }
                         }
                     }
                 }
             });
         }
 
-        // Ініціалізація графіків (RAM тепер має новий колір)
+        // Ініціалізація графіків
         const cpuTempChart = createChart('cpuTempChart', 'CPU Temp', '#ff6384');
-        const cpuLoadChart = createChart('cpuLoadChart', 'CPU Load', '#36a2eb');
+        const cpuLoadChart = createChart('cpuLoadChart', 'CPU Load', '#36a2eb', 100);
         const gpuTempChart = createChart('gpuTempChart', 'GPU Temp', '#ffce56');
-        const gpuLoadChart = createChart('gpuLoadChart', 'GPU Load', '#4bc0c0');
+        const gpuLoadChart = createChart('gpuLoadChart', 'GPU Load', '#4bc0c0', 100);
+        const cpuFreqChart = createChart('cpuFreqChart', 'CPU Freq', '#9966ff');
         
-        // Посилання на елементи для виводу числових значень
+        const extraChart1 = createChart('extraChart1', 'Extra 1', '#6a0dad');
+        const extraChart2 = createChart('extraChart2', 'Extra 2', '#008080');
+        const extraChart3 = createChart('extraChart3', 'Extra 3', '#ffa500');
+        const extraChart4 = createChart('extraChart4', 'Extra 4', '#8a2be2');
+
+
+        // Посилання на елементи для виводу числових значень метрик
         const ramUsageElement = document.getElementById('ramUsage');
         const currentCpuTempElement = document.getElementById('currentCpuTemp');
         const currentCpuLoadElement = document.getElementById('currentCpuLoad');
         const currentGpuTempElement = document.getElementById('currentGpuTemp');
         const currentGpuLoadElement = document.getElementById('currentGpuLoad');
+        const currentCpuFreqElement = document.getElementById('currentCpuFreq');
 
-        // Функція для оновлення даних
-        async function updateData() {
+        // Посилання на елементи аудіо
+        const audioDeviceSelect = document.getElementById('audioDeviceSelect');
+        const masterVolumeSlider = document.getElementById('masterVolumeSlider');
+        const masterVolumeValue = document.getElementById('masterVolumeValue');
+        const masterMuteButton = document.getElementById('masterMuteButton');
+        const applicationVolumesContainer = document.getElementById('applicationVolumes');
+        const noAppsMessage = document.getElementById('noAppsMessage');
+
+        let currentSelectedSinkIndex = null; // Track currently selected device
+
+
+        // --- Функції для аудіо контролю ---
+
+        async function updateAudioData() {
+            try {
+                const response = await fetch('/audio_data');
+                if (!response.ok) throw new Error('Network response for audio was not ok');
+                const data = await response.json();
+
+                // Update device select dropdown
+                const currentDeviceCount = audioDeviceSelect.options.length;
+                const newDeviceCount = data.sinks.length;
+                let devicesChanged = false;
+
+                if (currentDeviceCount - 1 !== newDeviceCount) { // -1 for initial "Loading..." option
+                    devicesChanged = true;
+                } else {
+                    for (let i = 0; i < newDeviceCount; i++) {
+                        if (audioDeviceSelect.options[i+1].value != data.sinks[i].index || audioDeviceSelect.options[i+1].textContent != data.sinks[i].name) {
+                            devicesChanged = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (devicesChanged) {
+                    audioDeviceSelect.innerHTML = ''; // Clear existing options
+                    data.sinks.forEach(sink => {
+                        const option = document.createElement('option');
+                        option.value = sink.index;
+                        option.textContent = sink.name;
+                        audioDeviceSelect.appendChild(option);
+                    });
+                }
+                
+                // Set selected device in dropdown
+                if (data.selected_sink_index !== null) {
+                    audioDeviceSelect.value = data.selected_sink_index;
+                    currentSelectedSinkIndex = data.selected_sink_index;
+                } else {
+                    audioDeviceSelect.value = ''; // No device selected or available
+                    currentSelectedSinkIndex = null;
+                }
+
+
+                // Master Volume for the selected device
+                masterVolumeSlider.value = data.master_volume;
+                masterVolumeValue.textContent = data.master_volume;
+                if (data.master_muted) {
+                    masterMuteButton.textContent = '🔇'; // Muted icon
+                    masterMuteButton.setAttribute('data-muted', 'true');
+                    masterVolumeSlider.classList.add('muted-slider');
+                } else {
+                    masterMuteButton.textContent = '🔊'; // Unmuted icon
+                    masterMuteButton.setAttribute('data-muted', 'false');
+                    masterVolumeSlider.classList.remove('muted-slider');
+                }
+                // Disable master controls if no sink is selected
+                masterVolumeSlider.disabled = data.selected_sink_index === null;
+                masterMuteButton.disabled = data.selected_sink_index === null;
+
+
+                // Application Volumes
+                applicationVolumesContainer.innerHTML = '<h3>Гучність програм:</h3>'; // Clear previous apps
+                if (data.application_volumes.length === 0) {
+                    noAppsMessage.style.display = 'block'; // Show "No apps" message
+                    applicationVolumesContainer.appendChild(noAppsMessage);
+                } else {
+                    noAppsMessage.style.display = 'none'; // Hide "No apps" message
+                    data.application_volumes.forEach(app => {
+                        const appDiv = document.createElement('div');
+                        appDiv.classList.add('app-volume-item');
+                        appDiv.innerHTML = `
+                            <span>${app.name}: <span id="appVolumeValue-${app.index}">${app.volume}</span>%</span>
+                            <div class="volume-slider-container">
+                                <input type="range" min="0" max="100" value="${app.volume}" class="slider app-slider" data-app-index="${app.index}">
+                                <button class="mute-button app-mute-button" data-app-index="${app.index}" data-muted="${app.muted ? 'true' : 'false'}">${app.muted ? '🔇' : '🔊'}</button>
+                            </div>
+                        `;
+                        applicationVolumesContainer.appendChild(appDiv);
+                    });
+
+                    // Re-attach event listeners for dynamically created sliders
+                    document.querySelectorAll('.app-slider').forEach(slider => {
+                        slider.oninput = (e) => {
+                            const index = e.target.dataset.appIndex;
+                            const volume = e.target.value;
+                            document.getElementById(`appVolumeValue-${index}`).textContent = volume;
+                            if (e.target.classList.contains('muted-slider') && volume > 0) {
+                                e.target.classList.remove('muted-slider');
+                            }
+                        };
+                        slider.onchange = async (e) => {
+                            const index = e.target.dataset.appIndex;
+                            const volume = e.target.value;
+                            await fetch(`/set_app_volume/${index}/${volume}`, { method: 'POST' });
+                        };
+                        const muteButton = slider.nextElementSibling;
+                        if (muteButton.dataset.muted === 'true') {
+                             slider.classList.add('muted-slider');
+                        } else {
+                            slider.classList.remove('muted-slider');
+                        }
+                    });
+
+                    document.querySelectorAll('.app-mute-button').forEach(button => {
+                        button.onclick = async (e) => {
+                            const index = e.target.dataset.appIndex;
+                            const currentlyMuted = e.target.dataset.muted === 'true';
+                            const newMuteState = !currentlyMuted;
+                            await fetch(`/toggle_app_mute/${index}/${newMuteState ? 1 : 0}`, { method: 'POST' });
+                            e.target.dataset.muted = newMuteState ? 'true' : 'false';
+                            e.target.textContent = newMuteState ? '🔇' : '🔊';
+                            const slider = e.target.previousElementSibling;
+                            if (newMuteState) {
+                                slider.classList.add('muted-slider');
+                            } else {
+                                slider.classList.remove('muted-slider');
+                            }
+                        };
+                    });
+                }
+
+            } catch (error) {
+                console.error("Помилка при отриманні даних аудіо:", error);
+                masterVolumeValue.textContent = '--';
+                masterVolumeSlider.value = 0;
+                audioDeviceSelect.innerHTML = '<option value="">Помилка завантаження</option>';
+                applicationVolumesContainer.innerHTML = '<h3>Гучність програм:</h3><p>Не вдалося завантажити аудіо дані.</p>';
+                masterVolumeSlider.disabled = true;
+                masterMuteButton.disabled = true;
+            }
+        }
+
+        // Master Volume Event Listeners
+        masterVolumeSlider.oninput = (e) => {
+            masterVolumeValue.textContent = e.target.value;
+            if (e.target.value > 0 && masterVolumeSlider.classList.contains('muted-slider')) {
+                masterVolumeSlider.classList.remove('muted-slider');
+                masterMuteButton.textContent = '🔊';
+                masterMuteButton.setAttribute('data-muted', 'false');
+            }
+        };
+
+        masterVolumeSlider.onchange = async (e) => {
+            const volume = e.target.value;
+            if (currentSelectedSinkIndex !== null) {
+                await fetch(`/set_master_volume/${volume}`, { method: 'POST' });
+            }
+            if (volume == 0) {
+                 masterMuteButton.textContent = '🔇';
+                 masterMuteButton.setAttribute('data-muted', 'true');
+                 masterVolumeSlider.classList.add('muted-slider');
+            }
+        };
+
+        masterMuteButton.onclick = async () => {
+            if (currentSelectedSinkIndex === null) return; // Do nothing if no device selected
+            const currentlyMuted = masterMuteButton.dataset.muted === 'true';
+            const newMuteState = !currentlyMuted;
+            await fetch(`/toggle_master_mute/${newMuteState ? 1 : 0}`, { method: 'POST' });
+            masterMuteButton.dataset.muted = newMuteState ? 'true' : 'false';
+            masterMuteButton.textContent = newMuteState ? '🔇' : '🔊';
+            if (newMuteState) {
+                masterVolumeSlider.classList.add('muted-slider');
+            } else {
+                masterVolumeSlider.classList.remove('muted-slider');
+            }
+        };
+
+        // Audio Device Select Event Listener
+        audioDeviceSelect.onchange = async (e) => {
+            const newSinkIndex = parseInt(e.target.value, 10);
+            if (!isNaN(newSinkIndex)) {
+                await fetch(`/set_selected_sink/${newSinkIndex}`, { method: 'POST' });
+                currentSelectedSinkIndex = newSinkIndex; // Update local state immediately
+                updateAudioData(); // Request immediate update to get new volume for selected device
+            }
+        };
+
+
+        // Функція для оновлення даних графіків
+        async function updateMetricsData() {
             try {
                 const response = await fetch('/data');
                 if (!response.ok) throw new Error('Network response was not ok');
-                const data = await response.json();
+                const data = await await response.json();
 
                 // --- Оновлення графіків ---
-                const charts = [cpuTempChart, cpuLoadChart, gpuTempChart, gpuLoadChart];
-                const dataKeys = ['cpu_temp', 'cpu_load', 'gpu_temp', 'gpu_load'];
+                const charts = [cpuTempChart, cpuLoadChart, gpuTempChart, gpuLoadChart, cpuFreqChart];
+                const dataKeys = ['cpu_temp', 'cpu_load', 'gpu_temp', 'gpu_load', 'cpu_freq'];
 
                 charts.forEach((chart, index) => {
-                    chart.data.labels = data.timestamps;
-                    chart.data.datasets[0].data = data[dataKeys[index]];
-                    chart.update();
+                    if (chart) {
+                        chart.data.labels = data.timestamps;
+                        chart.data.datasets[0].data = data[dataKeys[index]];
+                        chart.update();
+                    }
                 });
+
+                if (extraChart1) extraChart1.update();
+                if (extraChart2) extraChart2.update();
+                if (extraChart3) extraChart3.update();
+                if (extraChart4) extraChart4.update();
 
                 // --- Оновлення числових показників ---
                 const getLastValue = (arr) => arr.length > 0 ? arr[arr.length - 1] : '--';
@@ -122,14 +372,19 @@
                 currentGpuTempElement.textContent = getLastValue(data.gpu_temp);
                 currentGpuLoadElement.textContent = getLastValue(data.gpu_load);
                 ramUsageElement.textContent = data.ram_usage.toFixed(1);
+                currentCpuFreqElement.textContent = getLastValue(data.cpu_freq).toFixed(0);
 
             } catch (error) {
-                console.error("Помилка при отриманні даних:", error);
+                console.error("Помилка при отриманні даних метрик:", error);
             }
         }
 
-        // Запуск оновлення даних кожні 100 мс (0.1 секунди)
-        setInterval(updateData, 100);
+        // Запуск оновлення даних графіків кожні 100 мс (0.1 секунди)
+        setInterval(updateMetricsData, 800);
+        // Запуск оновлення аудіо даних кожну секунду
+        setInterval(updateAudioData, 1000);
+        // Перший запуск аудіо даних
+        updateAudioData();
     </script>
 </body>
 </html>
