@@ -1,215 +1,135 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>System Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Monitor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <div class="main-wrapper">
-        <div class="column">
-            <div class="monitor-container">
-                <div class="charts-container">
-                    <div class="chart-box">
-                        <h2>CPU Temp (°C): <span id="currentCpuTemp">--</span></h2>
-                        <canvas id="cpuTempChart"></canvas>
-                    </div>
-                    <div class="chart-box">
-                        <h2>CPU Load (%): <span id="currentCpuLoad">--</span></h2>
-                        <canvas id="cpuLoadChart"></canvas>
-                    </div>
-                    <div class="chart-box">
-                        <h2>GPU Temp (°C): <span id="currentGpuTemp">--</span></h2>
-                        <canvas id="gpuTempChart"></canvas>
-                    </div>
-                    <div class="chart-box">
-                        <h2>GPU Load (%): <span id="currentGpuLoad">--</span></h2>
-                        <canvas id="gpuLoadChart"></canvas>
-                    </div>
-                </div>
+    <div class="main-container">
+        <div class="grid-container">
+            <div class="chart-box">
+                <h2>Температура CPU (°C): <span class="current-value" id="currentCpuTemp">--</span></h2>
+                <canvas id="cpuTempChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <h2>Навантаження CPU (%): <span class="current-value" id="currentCpuLoad">--</span></h2>
+                <canvas id="cpuLoadChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <h2>Температура GPU (°C): <span class="current-value" id="currentGpuTemp">--</span></h2>
+                <canvas id="gpuTempChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <h2>Навантаження GPU (%): <span class="current-value" id="currentGpuLoad">--</span></h2>
+                <canvas id="gpuLoadChart"></canvas>
             </div>
         </div>
 
-        <div class="column">
-            <div class="process-manager-container">
-                <h2>Менеджер процесів</h2>
-                <div class="process-table-wrapper">
-                    <table class="process-table">
-                        <thead>
-                            <tr>
-                                <th data-sort="pid">PID</th>
-                                <th data-sort="name">Назва</th>
-                                <th data-sort="cpu_percent">CPU %</th>
-                                <th data-sort="memory_percent">RAM %</th>
-                                <th data-sort="username">Користувач</th>
-                                <th>Дія</th>
-                            </tr>
-                        </thead>
-                        <tbody id="process-list"></tbody>
-                    </table>
-                </div>
-            </div>
+        <div class="ram-display">
+            <h2>Використання RAM: <span id="ramUsage">--</span>%</h2>
         </div>
     </div>
 
-<script>
-Chart.defaults.color = '#e0e0e0';
-Chart.defaults.borderColor = '#444';
+    <script>
+        // --- ДОДАНО: ГЛОБАЛЬНІ НАЛАШТУВАННЯ CHART.JS ДЛЯ ТЕМНОЇ ТЕМИ ---
+        Chart.defaults.color = '#e0e0e0'; // Колір тексту на осях
+        Chart.defaults.borderColor = '#444'; // Колір ліній сітки
+        // --------------------------------------------------------------------
 
-function createChart(canvasId, label, color, yMax) {
-    const ctx = document.getElementById(canvasId).getContext('2d');
-    return new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: [],
-            datasets: [{
-                label: label,
-                data: [],
-                borderColor: color,
-                backgroundColor: color + '33',
-                borderWidth: 2,
-                pointRadius: 0,
-                fill: true,
-                tension: 0.4
-            }]
-        },
-        options: {
-            responsive: true,
-            animation: false,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                x: { display: false },
-                y: {
-                    min: 0,
-                    max: yMax,
-                    beginAtZero: true,
-                    ticks: { color: '#ccc' }
+        // Функція для створення та налаштування графіка
+        function createChart(canvasId, label, color) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [], // Мітки часу
+                    datasets: [{
+                        label: label,
+                        data: [], // Дані показника
+                        borderColor: color,
+                        backgroundColor: `${color}33`, // напівпрозорий фон
+                        borderWidth: 2,
+                        pointRadius: 0, // Прибираємо точки для кращої продуктивності
+                        fill: true,
+                        tension: 0.4 // Згладжування лінії
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            suggestedMax: (label.toLowerCase().includes('load') || label.toLowerCase().includes('ram')) ? 100 : undefined,
+                            ticks: {
+                                color: '#aaa' // Трохи світліший колір для чисел на осі Y
+                            }
+                        },
+                        x: {
+                             ticks: {
+                                color: '#aaa' // Трохи світліший колір для міток часу
+                            }
+                        }
+                    },
+                    animation: false, // Вимикаємо анімацію для швидких оновлень
+                    plugins: {
+                        legend: {
+                            display: false // Ховаємо легенду, оскільки назва є в заголовку
+                        }
+                    }
                 }
-            }
+            });
         }
-    });
-}
 
+        // Ініціалізація графіків (RAM тепер має новий колір)
+        const cpuTempChart = createChart('cpuTempChart', 'CPU Temp', '#ff6384');
+        const cpuLoadChart = createChart('cpuLoadChart', 'CPU Load', '#36a2eb');
+        const gpuTempChart = createChart('gpuTempChart', 'GPU Temp', '#ffce56');
+        const gpuLoadChart = createChart('gpuLoadChart', 'GPU Load', '#4bc0c0');
+        
+        // Посилання на елементи для виводу числових значень
+        const ramUsageElement = document.getElementById('ramUsage');
+        const currentCpuTempElement = document.getElementById('currentCpuTemp');
+        const currentCpuLoadElement = document.getElementById('currentCpuLoad');
+        const currentGpuTempElement = document.getElementById('currentGpuTemp');
+        const currentGpuLoadElement = document.getElementById('currentGpuLoad');
 
-
-const cpuTempChart = createChart('cpuTempChart', 'CPU Temp', '#ff6384', 105);
-const cpuLoadChart = createChart('cpuLoadChart', 'CPU Load', '#36a2eb', 100);
-const gpuTempChart = createChart('gpuTempChart', 'GPU Temp', '#ffce56', 105);
-const gpuLoadChart = createChart('gpuLoadChart', 'GPU Load', '#4bc0c0', 100);
-
-const ramUsageElement = document.getElementById('ramUsage');
-const currentCpuTempElement = document.getElementById('currentCpuTemp');
-const currentCpuLoadElement = document.getElementById('currentCpuLoad');
-const currentGpuTempElement = document.getElementById('currentGpuTemp');
-const currentGpuLoadElement = document.getElementById('currentGpuLoad');
-
-async function updateMonitorData() {
-    try {
-        const response = await fetch('/data');
-        const data = await response.json();
-        const charts = [cpuTempChart, cpuLoadChart, gpuTempChart, gpuLoadChart];
-        const dataKeys = ['cpu_temp', 'cpu_load', 'gpu_temp', 'gpu_load'];
-        charts.forEach((chart, index) => {
-            chart.data.labels = data.timestamps;
-            chart.data.datasets[0].data = data[dataKeys[index]];
-            chart.update();
-        });
-        const getLastValue = (arr) => (arr.length > 0 ? arr[arr.length - 1] : '--');
-        currentCpuTempElement.textContent = getLastValue(data.cpu_temp);
-        currentCpuLoadElement.textContent = getLastValue(data.cpu_load);
-        currentGpuTempElement.textContent = getLastValue(data.gpu_temp);
-        currentGpuLoadElement.textContent = getLastValue(data.gpu_load);
-        if (ramUsageElement) ramUsageElement.textContent = data.ram_usage.toFixed(1);
-    } catch (error) {
-        console.error("Monitor Error:", error);
-    }
-}
-
-setInterval(updateMonitorData, 1000);
-
-const processListBody = document.getElementById('process-list');
-let currentProcesses = [];
-let sortConfig = { key: 'cpu_percent', direction: 'desc' };
-
-function renderProcessTable() {
-    processListBody.innerHTML = '';
-    currentProcesses.sort((a, b) => {
-        let aVal = a[sortConfig.key];
-        let bVal = b[sortConfig.key];
-        if (typeof aVal === 'string') {
-            return aVal.localeCompare(bVal) * (sortConfig.direction === 'asc' ? 1 : -1);
-        }
-        return (aVal - bVal) * (sortConfig.direction === 'asc' ? 1 : -1);
-    });
-
-    currentProcesses.forEach(proc => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td class="number">${proc.pid}</td>
-            <td>${proc.name}</td>
-            <td class="number">${proc.cpu_percent.toFixed(2)}</td>
-            <td class="number">${proc.memory_percent.toFixed(2)}</td>
-            <td>${proc.username}</td>
-            <td><button class="kill-btn" data-pid="${proc.pid}">✕</button></td>
-        `;
-        processListBody.appendChild(row);
-    });
-}
-
-async function updateProcessList() {
-    try {
-        const response = await fetch('/processes');
-        currentProcesses = await response.json();
-        renderProcessTable();  // після оновлення даних викликаємо рендеринг, який сортує
-    } catch (error) {
-        console.error("Process List Error:", error);
-    }
-}
-
-
-document.querySelectorAll('.process-table th[data-sort]').forEach(header => {
-    header.addEventListener('click', () => {
-        const sortKey = header.dataset.sort;
-        if (sortConfig.key === sortKey) {
-            sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
-        } else {
-            sortConfig.key = sortKey;
-            sortConfig.direction = 'desc';
-        }
-        renderProcessTable();
-    });
-});
-
-processListBody.addEventListener('click', async (event) => {
-    if (event.target.classList.contains('kill-btn')) {
-        const pid = event.target.dataset.pid;
-        const processName = event.target.closest('tr').children[1].textContent;
-        if (confirm(`Ви впевнені, що хочете завершити процес ${pid} (${processName})?`)) {
+        // Функція для оновлення даних
+        async function updateData() {
             try {
-                const response = await fetch(`/kill/${pid}`, { method: 'POST' });
-                const result = await response.json();
-                if (result.status === 'success') {
-                    updateProcessList();
-                } else {
-                    alert(`Помилка: ${result.message}`);
-                }
+                const response = await fetch('/data');
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+
+                // --- Оновлення графіків ---
+                const charts = [cpuTempChart, cpuLoadChart, gpuTempChart, gpuLoadChart];
+                const dataKeys = ['cpu_temp', 'cpu_load', 'gpu_temp', 'gpu_load'];
+
+                charts.forEach((chart, index) => {
+                    chart.data.labels = data.timestamps;
+                    chart.data.datasets[0].data = data[dataKeys[index]];
+                    chart.update();
+                });
+
+                // --- Оновлення числових показників ---
+                const getLastValue = (arr) => arr.length > 0 ? arr[arr.length - 1] : '--';
+
+                currentCpuTempElement.textContent = getLastValue(data.cpu_temp);
+                currentCpuLoadElement.textContent = getLastValue(data.cpu_load);
+                currentGpuTempElement.textContent = getLastValue(data.gpu_temp);
+                currentGpuLoadElement.textContent = getLastValue(data.gpu_load);
+                ramUsageElement.textContent = data.ram_usage.toFixed(1);
+
             } catch (error) {
-                alert('Не вдалося виконати запит на завершення процесу.');
-                console.error("Kill Process Error:", error);
+                console.error("Помилка при отриманні даних:", error);
             }
         }
-    }
-});
 
-setInterval(updateProcessList, 2000);
-window.onload = () => {
-    updateProcessList();
-    updateMonitorData();
-};
-</script>
+        // Запуск оновлення даних кожні 100 мс (0.1 секунди)
+        setInterval(updateData, 100);
+    </script>
 </body>
 </html>
