@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Monitor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="main-container">
+        <div class="grid-container">
+            <div class="chart-box">
+                <h2>Температура CPU (°C): <span class="current-value" id="currentCpuTemp">--</span></h2>
+                <canvas id="cpuTempChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <h2>Навантаження CPU (%): <span class="current-value" id="currentCpuLoad">--</span></h2>
+                <canvas id="cpuLoadChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <h2>Температура GPU (°C): <span class="current-value" id="currentGpuTemp">--</span></h2>
+                <canvas id="gpuTempChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <h2>Навантаження GPU (%): <span class="current-value" id="currentGpuLoad">--</span></h2>
+                <canvas id="gpuLoadChart"></canvas>
+            </div>
+        </div>
+
+        <div class="ram-display">
+            <h2>Використання RAM: <span id="ramUsage">--</span>%</h2>
+        </div>
+    </div>
+
+    <script>
+        // --- ДОДАНО: ГЛОБАЛЬНІ НАЛАШТУВАННЯ CHART.JS ДЛЯ ТЕМНОЇ ТЕМИ ---
+        Chart.defaults.color = '#e0e0e0'; // Колір тексту на осях
+        Chart.defaults.borderColor = '#444'; // Колір ліній сітки
+        // --------------------------------------------------------------------
+
+        // Функція для створення та налаштування графіка
+        function createChart(canvasId, label, color) {
+            const ctx = document.getElementById(canvasId).getContext('2d');
+            return new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [], // Мітки часу
+                    datasets: [{
+                        label: label,
+                        data: [], // Дані показника
+                        borderColor: color,
+                        backgroundColor: `${color}33`, // напівпрозорий фон
+                        borderWidth: 2,
+                        pointRadius: 0, // Прибираємо точки для кращої продуктивності
+                        fill: true,
+                        tension: 0.4 // Згладжування лінії
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            suggestedMax: (label.toLowerCase().includes('load') || label.toLowerCase().includes('ram')) ? 100 : undefined,
+                            ticks: {
+                                color: '#aaa' // Трохи світліший колір для чисел на осі Y
+                            }
+                        },
+                        x: {
+                             ticks: {
+                                color: '#aaa' // Трохи світліший колір для міток часу
+                            }
+                        }
+                    },
+                    animation: false, // Вимикаємо анімацію для швидких оновлень
+                    plugins: {
+                        legend: {
+                            display: false // Ховаємо легенду, оскільки назва є в заголовку
+                        }
+                    }
+                }
+            });
+        }
+
+        // Ініціалізація графіків (RAM тепер має новий колір)
+        const cpuTempChart = createChart('cpuTempChart', 'CPU Temp', '#ff6384');
+        const cpuLoadChart = createChart('cpuLoadChart', 'CPU Load', '#36a2eb');
+        const gpuTempChart = createChart('gpuTempChart', 'GPU Temp', '#ffce56');
+        const gpuLoadChart = createChart('gpuLoadChart', 'GPU Load', '#4bc0c0');
+        
+        // Посилання на елементи для виводу числових значень
+        const ramUsageElement = document.getElementById('ramUsage');
+        const currentCpuTempElement = document.getElementById('currentCpuTemp');
+        const currentCpuLoadElement = document.getElementById('currentCpuLoad');
+        const currentGpuTempElement = document.getElementById('currentGpuTemp');
+        const currentGpuLoadElement = document.getElementById('currentGpuLoad');
+
+        // Функція для оновлення даних
+        async function updateData() {
+            try {
+                const response = await fetch('/data');
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+
+                // --- Оновлення графіків ---
+                const charts = [cpuTempChart, cpuLoadChart, gpuTempChart, gpuLoadChart];
+                const dataKeys = ['cpu_temp', 'cpu_load', 'gpu_temp', 'gpu_load'];
+
+                charts.forEach((chart, index) => {
+                    chart.data.labels = data.timestamps;
+                    chart.data.datasets[0].data = data[dataKeys[index]];
+                    chart.update();
+                });
+
+                // --- Оновлення числових показників ---
+                const getLastValue = (arr) => arr.length > 0 ? arr[arr.length - 1] : '--';
+
+                currentCpuTempElement.textContent = getLastValue(data.cpu_temp);
+                currentCpuLoadElement.textContent = getLastValue(data.cpu_load);
+                currentGpuTempElement.textContent = getLastValue(data.gpu_temp);
+                currentGpuLoadElement.textContent = getLastValue(data.gpu_load);
+                ramUsageElement.textContent = data.ram_usage.toFixed(1);
+
+            } catch (error) {
+                console.error("Помилка при отриманні даних:", error);
+            }
+        }
+
+        // Запуск оновлення даних кожні 100 мс (0.1 секунди)
+        setInterval(updateData, 100);
+    </script>
+</body>
+</html>

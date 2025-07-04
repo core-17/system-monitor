@@ -1,0 +1,100 @@
+html {
+    height: 100%;
+    overflow: hidden; /* Забороняємо прокрутку на рівні документа */
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: #121212;
+    color: #e0e0e0;
+    margin: 0;
+    height: 100%;
+    display: flex; /* Використовуємо flexbox для body */
+    padding: 15px;
+    box-sizing: border-box;
+}
+
+.main-container {
+    max-width: 1600px;
+    width: 100%;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column; /* Вертикальне розташування елементів */
+    height: 100%;
+}
+
+h1, h2 {
+    text-align: center;
+    color: #ffffff;
+    font-weight: 400;
+    margin-top: 5px;
+    margin-bottom: 10px;
+}
+
+h1 {
+    flex-shrink: 0; /* Заголовок не має стискатися */
+    margin-bottom: 15px;
+}
+
+/* Сітка для графіків тепер буде гнучкою */
+.grid-container {
+    flex-grow: 1; /* Дозволяємо сітці зайняти весь доступний простір */
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Дві колонки */
+    grid-template-rows: 1fr 1fr;    /* Два рядки однакової висоти */
+    gap: 15px;
+    min-height: 0; /* Важливо для роботи flex-grow в деяких браузерах */
+}
+
+.chart-box {
+    background-color: #1e1e1e;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    border: 1px solid #2a2a2a;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    /* Видаляємо фіксовану висоту - вона буде розрахована автоматично */
+}
+
+.ram-display {
+    flex-shrink: 0; /* Блок RAM не має стискатися */
+    height: auto;
+    min-height: auto;
+    margin-top: 15px;
+    background-color: #1e1e1e;
+    border-radius: 8px;
+    padding: 5px 15px;
+}
+
+.ram-display h2 {
+    margin: 10px;
+}
+
+/* Кольорові акценти для числових значень */
+#currentCpuTemp { color: #ff6384; }
+#currentCpuLoad { color: #36a2eb; }
+#currentGpuTemp { color: #ffce56; }
+#currentGpuLoad { color: #4bc0c0; }
+#ramUsage { color: #9966ff; }
+
+.current-value,
+#ramUsage {
+    font-weight: bold;
+}
+
+/* Медіа-запит для маленьких екранів (вертикальне розташування) */
+@media (max-width: 850px) {
+    html {
+        overflow: auto; /* Дозволяємо скрол на мобільних пристроях */
+    }
+    .grid-container {
+        grid-template-columns: 1fr; /* Один графік на рядок */
+        grid-template-rows: 1fr 1fr 1fr 1fr; /* 4 рядки */
+    }
+    .chart-box {
+        min-height: 250px; /* Мінімальна висота для читабельності */
+    }
+}
