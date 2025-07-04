@@ -1,20 +1,36 @@
-# System Monitor with Charts and htop-style Process Viewer
+System Monitor & Audio Controller
 
-📊 Realtime system monitoring dashboard with:
-- CPU/GPU temperature and load charts
-- RAM usage
-- Process list with CPU/RAM usage (like `htop`)
-- Kill process button
+📊 Realtime System Monitoring & Audio Control Dashboard with:
 
-## 📦 Requirements
+CPU/GPU temperature and load charts
 
-- Python 3.8+
-- Flask
-- psutil
-- `nvidia-smi` (for NVIDIA GPU metrics)
+RAM usage
 
-## 🚀 Run
+CPU frequency chart
 
-```bash
+Audio Mixer:
+
+Master volume control for selected output device
+
+Dynamic list of active application volumes
+
+Ability to switch playback device for individual applications
+
+📦 Requirements
+
+Python 3.8+
+
+Flask
+
+psutil
+
+pulsectl (for Linux audio control)
+
+nvidia-smi (for NVIDIA GPU metrics)
+
+🚀 Run
+
+Bash
+
 pip install -r requirements.txt
 python app.py
